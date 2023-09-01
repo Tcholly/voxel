@@ -16,7 +16,7 @@ void fill_chunk(chunk_t* chunk)
 			int variation = rand() % 5;
 			for (size_t y = 0; y < 10 + (size_t)variation; y++)
 			{
-				set_block(chunk, x, y, z, BLOCK_TYPE_BASIC);
+				set_block(chunk, x, y, z, BLOCK_TYPE_BASIC, false);
 			}
 		}
 	}
@@ -27,10 +27,53 @@ block_type get_block(chunk_t* chunk, size_t x, size_t y, size_t z)
 	return chunk->blocks[x][y][z];
 }
 
-void set_block(chunk_t* chunk, size_t x, size_t y, size_t z, block_type block)
+void set_block(chunk_t* chunk, size_t x, size_t y, size_t z, block_type block, bool update_meshes)
 {
 	chunk->blocks[x][y][z] = block;
-	// TODO: Update chunk mesh
+
+	if (update_meshes)
+	{
+		update_chunk_model(chunk);
+
+		if (x == 0)
+		{
+			chunk_t* neighbooring_chunk = get_chunk(chunk->world, chunk->position.x - 1, chunk->position.y, chunk->position.z);
+			if (neighbooring_chunk)
+				update_chunk_model(neighbooring_chunk);
+		}
+		else if (x == CHUNK_SIZE - 1)
+		{
+			chunk_t* neighbooring_chunk = get_chunk(chunk->world, chunk->position.x + 1, chunk->position.y, chunk->position.z);
+			if (neighbooring_chunk)
+				update_chunk_model(neighbooring_chunk);
+		}
+
+		if (y == 0)
+		{
+			chunk_t* neighbooring_chunk = get_chunk(chunk->world, chunk->position.x, chunk->position.y - 1, chunk->position.z);
+			if (neighbooring_chunk)
+				update_chunk_model(neighbooring_chunk);
+		}
+		else if (y == CHUNK_SIZE - 1)
+		{
+			chunk_t* neighbooring_chunk = get_chunk(chunk->world, chunk->position.x, chunk->position.y + 1, chunk->position.z);
+			if (neighbooring_chunk)
+				update_chunk_model(neighbooring_chunk);
+		}
+
+		if (z == 0)
+		{
+			chunk_t* neighbooring_chunk = get_chunk(chunk->world, chunk->position.x, chunk->position.y, chunk->position.z - 1);
+			if (neighbooring_chunk)
+				update_chunk_model(neighbooring_chunk);
+		}
+		else if (z == CHUNK_SIZE - 1)
+		{
+			chunk_t* neighbooring_chunk = get_chunk(chunk->world, chunk->position.x, chunk->position.y, chunk->position.z + 1);
+			if (neighbooring_chunk)
+				update_chunk_model(neighbooring_chunk);
+		}
+	}
 }
 
 block_type get_neighboor_block(chunk_t* chunk, size_t x, size_t y, size_t z, direction_type direction)

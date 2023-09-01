@@ -116,7 +116,7 @@ int main(void)
 				size_t voxel_z = (int)voxel_center.z - world.chunks[chunk_index].position.z * CHUNK_SIZE;
 				printf("%d -- %f, %f, %f -> %zu, %zu, %zu\n", chunk_index, voxel_center.x, voxel_center.y, voxel_center.z, voxel_x, voxel_y, voxel_z);
 				
-				set_block(&world.chunks[chunk_index], voxel_x, voxel_y, voxel_z, BLOCK_TYPE_NONE);
+				set_block(&world.chunks[chunk_index], voxel_x, voxel_y, voxel_z, BLOCK_TYPE_NONE, true);
 				update_chunk_model(&world.chunks[chunk_index]);
 			}
 
