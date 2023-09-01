@@ -41,5 +41,6 @@ void set_block(chunk_t* chunk, size_t x, size_t y, size_t z, block_type block);
 block_type get_block(chunk_t* chunk, size_t x, size_t y, size_t z);
 block_type get_neighboor_block(chunk_t* chunk, size_t x, size_t y, size_t z, direction_type direction);
 void generate_chunk_model(chunk_t* chunk);
+void update_chunk_model(chunk_t* chunk);
 void unload_chunk_model(chunk_t* chunk);
 void render_chunk(chunk_t* chunk);

@@ -224,6 +224,12 @@ void generate_chunk_model(chunk_t* chunk)
 	chunk->model = LoadModelFromMesh(mesh);
 }
 
+void update_chunk_model(chunk_t* chunk)
+{
+	unload_chunk_model(chunk);
+	generate_chunk_model(chunk);
+}
+
 void unload_chunk_model(chunk_t* chunk)
 {
 	// UploadMesh and UnloadModel frees the allocated arrays -> vertices indices colors

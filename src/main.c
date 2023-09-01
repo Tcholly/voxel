@@ -1,8 +1,11 @@
+#include <float.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <raylib.h>
 #include <raymath.h>
 
+#include "chunk.h"
 #include "world.h"
 
 int main(void)
@@ -78,6 +81,47 @@ int main(void)
 			generate_world_chunks_model(&world);
 		}
 
+		if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+		{
+			Vector2 center = {
+				.x = GetScreenWidth() / 2.0f,
+				.y = GetScreenHeight() / 2.0f,
+			};
+			Ray ray = GetMouseRay(center, camera);
+			float distance = FLT_MAX;
+			int chunk_index = -1;
+			RayCollision collision = {0};
+
+			for (size_t i = 0; i < world.chunk_capacity; i++)
+			{
+				Matrix transform = MatrixTranslate(
+						world.chunks[i].position.x * CHUNK_SIZE,
+						world.chunks[i].position.y * CHUNK_SIZE,
+						world.chunks[i].position.z * CHUNK_SIZE
+					);
+				RayCollision ray_collision = GetRayCollisionMesh(ray, world.chunks[i].model.meshes[0], transform);
+				if (ray_collision.hit && ray_collision.distance < distance)
+				{
+					distance = ray_collision.distance;
+					collision = ray_collision;
+					chunk_index = i;
+				}
+			}
+
+			if (collision.hit)
+			{
+				Vector3 voxel_center = Vector3Subtract(collision.point, Vector3Scale(collision.normal, 0.5f));
+				size_t voxel_x = (int)voxel_center.x - world.chunks[chunk_index].position.x * CHUNK_SIZE;
+				size_t voxel_y = (int)voxel_center.y - world.chunks[chunk_index].position.y * CHUNK_SIZE;
+				size_t voxel_z = (int)voxel_center.z - world.chunks[chunk_index].position.z * CHUNK_SIZE;
+				printf("%d -- %f, %f, %f -> %zu, %zu, %zu\n", chunk_index, voxel_center.x, voxel_center.y, voxel_center.z, voxel_x, voxel_y, voxel_z);
+				
+				set_block(&world.chunks[chunk_index], voxel_x, voxel_y, voxel_z, BLOCK_TYPE_NONE);
+				update_chunk_model(&world.chunks[chunk_index]);
+			}
+
+		}
+
 		BeginDrawing();
 		ClearBackground(WHITE);
 
@@ -90,6 +134,12 @@ int main(void)
 		// DrawLine3D(camera.target, (Vector3){camera.target.x, camera.target.y, camera.target.z + 1.0f}, GREEN);
 
 		EndMode3D();
+
+		Vector2 center = {
+			.x = GetScreenWidth() / 2.0f,
+			.y = GetScreenHeight() / 2.0f,
+		};
+		DrawCircleV(center, 3.0f, BLACK);
 
 		DrawFPS(5, 5);
 		
