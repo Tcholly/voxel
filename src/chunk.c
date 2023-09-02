@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "utils/mesh.h"
@@ -24,11 +25,32 @@ void fill_chunk(chunk_t* chunk)
 
 block_type get_block(chunk_t* chunk, size_t x, size_t y, size_t z)
 {
+	if (!chunk)
+	{
+		printf("WARNING: in get_block -> chunk is null\n");
+		return BLOCK_TYPE_NONE;
+	}
+	if (x >= CHUNK_SIZE || y >= CHUNK_SIZE || z >= CHUNK_SIZE)
+	{
+		printf("WARNING: in get_block -> out of bounds\n");
+		return BLOCK_TYPE_NONE;
+	}
 	return chunk->blocks[x][y][z];
 }
 
 void set_block(chunk_t* chunk, size_t x, size_t y, size_t z, block_type block, bool update_meshes)
 {
+	if (!chunk)
+	{
+		printf("WARNING: in set_block -> chunk is null\n");
+		return;
+	}
+	if (x >= CHUNK_SIZE || y >= CHUNK_SIZE || z >= CHUNK_SIZE)
+	{
+		printf("WARNING: in set_block -> out of bounds\n");
+		return;
+	}
+
 	chunk->blocks[x][y][z] = block;
 
 	if (update_meshes)
