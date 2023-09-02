@@ -21,8 +21,8 @@ int main(void)
 		.projection = CAMERA_PERSPECTIVE,
 		.fovy = 45.0f,
 		.up = {0.0f, 1.0f, 0.0f},
-		.target = {0.0f, 20.0f, 1.0f},
-		.position = {0.0f, 20.0f, 0.0f}
+		.target = {128.0f, 20.0f, 129.0f},
+		.position = {128.0f, 20.0f, 128.0f}
 	};
 
 	bool debug_information = false;
@@ -121,9 +121,79 @@ int main(void)
 				size_t voxel_z = (int)voxel_center.z - world.chunks[chunk_index].position.z * CHUNK_SIZE;
 				
 				set_block(&world.chunks[chunk_index], voxel_x, voxel_y, voxel_z, BLOCK_TYPE_NONE, true);
-				update_chunk_model(&world.chunks[chunk_index]);
+			}
+		}
+
+		if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
+		{
+			Vector2 center = {
+				.x = GetScreenWidth() / 2.0f,
+				.y = GetScreenHeight() / 2.0f,
+			};
+			Ray ray = GetMouseRay(center, camera);
+			float distance = FLT_MAX;
+			int chunk_index = -1;
+			RayCollision collision = {0};
+
+			for (size_t i = 0; i < world.chunk_capacity; i++)
+			{
+				Matrix transform = MatrixTranslate(
+						world.chunks[i].position.x * CHUNK_SIZE,
+						world.chunks[i].position.y * CHUNK_SIZE,
+						world.chunks[i].position.z * CHUNK_SIZE
+					);
+				RayCollision ray_collision = GetRayCollisionMesh(ray, world.chunks[i].model.meshes[0], transform);
+				if (ray_collision.hit && ray_collision.distance < distance)
+				{
+					distance = ray_collision.distance;
+					collision = ray_collision;
+					chunk_index = i;
+				}
 			}
 
+			if (collision.hit)
+			{
+				Vector3 voxel_center = Vector3Add(collision.point, Vector3Scale(collision.normal, 0.5f));
+				chunk_t* chunk = &world.chunks[chunk_index];
+
+				int voxel_x = (int)voxel_center.x - chunk->position.x * CHUNK_SIZE;
+				int voxel_y = (int)voxel_center.y - chunk->position.y * CHUNK_SIZE;
+				int voxel_z = (int)voxel_center.z - chunk->position.z * CHUNK_SIZE;
+
+				if (voxel_x < 0)
+				{
+					chunk = get_chunk(&world, chunk->position.x - 1, chunk->position.y, chunk->position.z);
+					voxel_x = CHUNK_SIZE - 1;
+				}
+				else if (voxel_x >= CHUNK_SIZE)
+				{
+					chunk = get_chunk(&world, chunk->position.x + 1, chunk->position.y, chunk->position.z);
+					voxel_x = 0;
+				}
+				if (voxel_y < 0)
+				{
+					chunk = get_chunk(&world, chunk->position.x, chunk->position.y - 1, chunk->position.z);
+					voxel_y = CHUNK_SIZE - 1;
+				}
+				else if (voxel_y >= CHUNK_SIZE)
+				{
+					chunk = get_chunk(&world, chunk->position.x, chunk->position.y + 1, chunk->position.z);
+					voxel_y = 0;
+				}
+				if (voxel_z < 0)
+				{
+					chunk = get_chunk(&world, chunk->position.x, chunk->position.y, chunk->position.z - 1);
+					voxel_z = CHUNK_SIZE - 1;
+				}
+				else if (voxel_z >= CHUNK_SIZE)
+				{
+					chunk = get_chunk(&world, chunk->position.x, chunk->position.y, chunk->position.z + 1);
+					voxel_z = 0;
+				}
+				
+				
+				set_block(chunk, voxel_x, voxel_y, voxel_z, BLOCK_TYPE_BASIC, true);
+			}
 		}
 
 		BeginDrawing();
