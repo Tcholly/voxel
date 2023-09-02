@@ -19,3 +19,4 @@ chunk_t* get_chunk(world_t* world, int x, int y, int z);
 void generate_world_chunks_model(world_t* world);
 void unload_world_chunks_model(world_t* world);
 void render_world(world_t* world);
+void render_world_chunks_borders(world_t* world);

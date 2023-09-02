@@ -25,6 +25,8 @@ int main(void)
 		.position = {0.0f, 20.0f, 0.0f}
 	};
 
+	bool debug_information = false;
+
 	fill_world(&world);
 	generate_world_chunks_model(&world);
 
@@ -59,7 +61,7 @@ int main(void)
 
 
 		Vector3 camera_direction = Vector3Subtract(camera.target, camera.position);
-		Vector2 mouse_delta = Vector2Scale(GetMouseDelta(), 0.01f);
+		Vector2 mouse_delta = Vector2Scale(GetMouseDelta(), 0.005f);
 		Vector3 perpendicular_axis = Vector3CrossProduct(camera_direction, (Vector3){0.0f, 1.0f, 0.0f});
 		Quaternion q1 = QuaternionFromAxisAngle((Vector3){0.0f, 1.0f, 0.0f}, -mouse_delta.x);
 		Quaternion q2 = QuaternionFromAxisAngle(perpendicular_axis, -mouse_delta.y);
@@ -80,6 +82,9 @@ int main(void)
 			unload_world_chunks_model(&world);
 			generate_world_chunks_model(&world);
 		}
+
+		if (IsKeyPressed(KEY_G))
+			debug_information = !debug_information;
 
 		if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
 		{
@@ -114,7 +119,6 @@ int main(void)
 				size_t voxel_x = (int)voxel_center.x - world.chunks[chunk_index].position.x * CHUNK_SIZE;
 				size_t voxel_y = (int)voxel_center.y - world.chunks[chunk_index].position.y * CHUNK_SIZE;
 				size_t voxel_z = (int)voxel_center.z - world.chunks[chunk_index].position.z * CHUNK_SIZE;
-				printf("%d -- %f, %f, %f -> %zu, %zu, %zu\n", chunk_index, voxel_center.x, voxel_center.y, voxel_center.z, voxel_x, voxel_y, voxel_z);
 				
 				set_block(&world.chunks[chunk_index], voxel_x, voxel_y, voxel_z, BLOCK_TYPE_NONE, true);
 				update_chunk_model(&world.chunks[chunk_index]);
@@ -123,15 +127,20 @@ int main(void)
 		}
 
 		BeginDrawing();
-		ClearBackground(WHITE);
+		ClearBackground(BLACK);
 
 		BeginMode3D(camera);
 		
 		render_world(&world);
 
-		// DrawLine3D(camera.target, (Vector3){camera.target.x + 1.0f, camera.target.y, camera.target.z}, BLUE);
-		// DrawLine3D(camera.target, (Vector3){camera.target.x, camera.target.y + 1.0f, camera.target.z}, RED);
-		// DrawLine3D(camera.target, (Vector3){camera.target.x, camera.target.y, camera.target.z + 1.0f}, GREEN);
+		if (debug_information)
+		{
+			DrawLine3D(camera.target, (Vector3){camera.target.x + 0.2f, camera.target.y, camera.target.z}, BLUE);
+			DrawLine3D(camera.target, (Vector3){camera.target.x, camera.target.y + 0.2f, camera.target.z}, RED);
+			DrawLine3D(camera.target, (Vector3){camera.target.x, camera.target.y, camera.target.z + 0.2f}, GREEN);
+
+			render_world_chunks_borders(&world);
+		}
 
 		EndMode3D();
 

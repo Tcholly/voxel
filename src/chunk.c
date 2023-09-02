@@ -284,3 +284,9 @@ void render_chunk(chunk_t* chunk)
 	Vector3 position = { chunk->position.x * CHUNK_SIZE, chunk->position.y * CHUNK_SIZE, chunk->position.z * CHUNK_SIZE };
 	DrawModel(chunk->model, position, 1.0f, WHITE);
 }
+
+void render_chunk_borders(chunk_t* chunk)
+{
+	Vector3 position = { (chunk->position.x + 0.5f)* CHUNK_SIZE, (chunk->position.y + 0.5f) * CHUNK_SIZE, (chunk->position.z + 0.5f) * CHUNK_SIZE };
+	DrawCubeWires(position, CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE, LIGHTGRAY);
+}

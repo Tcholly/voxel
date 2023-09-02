@@ -72,3 +72,9 @@ void render_world(world_t* world)
 	for (size_t i = 0; i < world->chunk_capacity; i++)
 		render_chunk(&world->chunks[i]);
 }
+
+void render_world_chunks_borders(world_t* world)
+{
+	for (size_t i = 0; i < world->chunk_capacity; i++)
+		render_chunk_borders(&world->chunks[i]);
+}
