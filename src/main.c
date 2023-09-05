@@ -196,6 +196,26 @@ int main(void)
 			}
 		}
 
+		// Chunk_loading
+		vector3i_t current_chunk = 
+		{
+			.x = camera.position.x / CHUNK_SIZE,
+			.y = 0,
+			.z = camera.position.z / CHUNK_SIZE,
+		};
+		if (camera.position.x < 0) current_chunk.x -= 1;
+		if (camera.position.z < 0) current_chunk.z -= 1;
+		if (!get_chunk(&world, current_chunk.x, current_chunk.y, current_chunk.z))
+		{
+			int ranom_chunk_index = rand() % world.chunk_capacity;
+			chunk_t* chunk = &world.chunks[ranom_chunk_index];
+			free_chunk(chunk);
+			chunk->position = current_chunk;
+			chunk->world = &world;
+			fill_chunk(chunk);
+			generate_chunk_model(chunk);
+		}
+
 		BeginDrawing();
 		ClearBackground(BLACK);
 
@@ -224,7 +244,6 @@ int main(void)
 		
 		EndDrawing();
 	}
-
 
 
 	free_world(&world);
