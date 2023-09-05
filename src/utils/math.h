@@ -8,3 +8,5 @@ typedef struct
 
 int clamp(int value, int min, int max);
 float clampf(float value, float min, float max);
+
+float perlin_noise_3d(int x, int y, int z);
