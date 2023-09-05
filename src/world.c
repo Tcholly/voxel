@@ -18,6 +18,9 @@ world_t allocate_world(size_t size_x, size_t size_y, size_t size_z)
 
 void free_world(world_t* world)
 {
+	for (size_t i = 0; i < world->chunk_capacity; i++)
+		free_chunk(&world->chunks[i]);
+
 	free(world->chunks);
 	world->chunk_capacity = 0;
 	world->size = (vector3i_t){0, 0, 0};

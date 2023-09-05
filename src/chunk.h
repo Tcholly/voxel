@@ -45,3 +45,4 @@ void update_chunk_model(chunk_t* chunk);
 void unload_chunk_model(chunk_t* chunk);
 void render_chunk(chunk_t* chunk);
 void render_chunk_borders(chunk_t* chunk);
+void free_chunk(chunk_t* chunk);

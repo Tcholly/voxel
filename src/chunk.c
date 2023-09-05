@@ -1,6 +1,7 @@
 #include "chunk.h"
 
 #include <assert.h>
+#include <math.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,12 +11,14 @@
 
 void fill_chunk(chunk_t* chunk)
 {
-	for (size_t x = 0; x < CHUNK_SIZE; x++)
+	for (int x = 0; x < CHUNK_SIZE; x++)
 	{
-		for (size_t z = 0; z < CHUNK_SIZE; z++)
+		for (int z = 0; z < CHUNK_SIZE; z++)
 		{
-			int variation = rand() % 5;
-			for (size_t y = 0; y < 10 + (size_t)variation; y++)
+			float vx = chunk->position.x * CHUNK_SIZE + x;
+			float vz = chunk->position.z * CHUNK_SIZE + z;
+			int height = ((sinf(vx / 5.0f) + cosf(vz / 5.0f)) + 2.0f) / 4.0f  * CHUNK_SIZE + 1;
+			for (size_t y = 0; y < (size_t)height; y++)
 			{
 				set_block(chunk, x, y, z, BLOCK_TYPE_BASIC, false);
 			}
@@ -309,6 +312,17 @@ void render_chunk(chunk_t* chunk)
 
 void render_chunk_borders(chunk_t* chunk)
 {
-	Vector3 position = { (chunk->position.x + 0.5f)* CHUNK_SIZE, (chunk->position.y + 0.5f) * CHUNK_SIZE, (chunk->position.z + 0.5f) * CHUNK_SIZE };
+	Vector3 position = { (chunk->position.x + 0.5f) * CHUNK_SIZE, (chunk->position.y + 0.5f) * CHUNK_SIZE, (chunk->position.z + 0.5f) * CHUNK_SIZE };
 	DrawCubeWires(position, CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE, LIGHTGRAY);
+}
+
+void free_chunk(chunk_t* chunk)
+{
+	unload_chunk_model(chunk);
+	chunk->position = (vector3i_t){0, 0, 0};
+	chunk->world = NULL;
+	for (size_t x = 0; x < CHUNK_SIZE; x++)
+		for (size_t y = 0; y < CHUNK_SIZE; y++)
+			for (size_t z = 0; z < CHUNK_SIZE; z++)
+				chunk->blocks[x][y][z] = BLOCK_TYPE_NONE;
 }
