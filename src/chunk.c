@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "utils/math.h"
 #include "utils/mesh.h"
 #include "world.h"
 
@@ -13,14 +14,15 @@ void fill_chunk(chunk_t* chunk)
 {
 	for (int x = 0; x < CHUNK_SIZE; x++)
 	{
+		float vx = chunk->position.x * CHUNK_SIZE + x;
 		for (int z = 0; z < CHUNK_SIZE; z++)
 		{
-			float vx = chunk->position.x * CHUNK_SIZE + x;
 			float vz = chunk->position.z * CHUNK_SIZE + z;
-			int height = ((sinf(vx / 5.0f) + cosf(vz / 5.0f)) + 2.0f) / 4.0f  * CHUNK_SIZE + 1;
-			for (size_t y = 0; y < (size_t)height; y++)
+			for (size_t y = 0; y < CHUNK_SIZE; y++)
 			{
-				set_block(chunk, x, y, z, BLOCK_TYPE_BASIC, false);
+				float vy = chunk->position.y * CHUNK_SIZE + y;
+				if (perlin_noise_3d(vx, vy, vz) < 0.5f)
+					set_block(chunk, x, y, z, BLOCK_TYPE_BASIC, false);
 			}
 		}
 	}
