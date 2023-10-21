@@ -25,6 +25,13 @@ int main(void)
 		.position = {128.0f, 20.0f, 128.0f}
 	};
 
+	vector3i_t previous_chunk = 
+	{
+		.x = camera.position.x / CHUNK_SIZE,
+		.y = 0,
+		.z = camera.position.z / CHUNK_SIZE,
+	};
+
 	bool debug_information = false;
 
 	fill_world(&world);
@@ -205,16 +212,17 @@ int main(void)
 		};
 		if (camera.position.x < 0) current_chunk.x -= 1;
 		if (camera.position.z < 0) current_chunk.z -= 1;
-		if (!get_chunk(&world, current_chunk.x, current_chunk.y, current_chunk.z))
+
+		if (!vecto3i_equals(previous_chunk, current_chunk))
 		{
-			int ranom_chunk_index = rand() % world.chunk_capacity;
-			chunk_t* chunk = &world.chunks[ranom_chunk_index];
-			free_chunk(chunk);
-			chunk->position = current_chunk;
-			chunk->world = &world;
-			fill_chunk(chunk);
-			generate_chunk_model(chunk);
+			int direction_x = current_chunk.x - previous_chunk.x;
+			int direction_z = current_chunk.z - previous_chunk.z;
+
+			unload_and_load_new_chunks(&world, direction_x, 0, direction_z);
+		
+			previous_chunk = current_chunk;
 		}
+
 
 		BeginDrawing();
 		ClearBackground(BLACK);

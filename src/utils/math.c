@@ -28,3 +28,10 @@ float perlin_noise_3d(int x, int y, int z)
 	float sum = s1 + s2 + s3;
 	return (sum + 3.0f) / 6.0f;
 }
+
+// vector3i_t
+
+bool vecto3i_equals(vector3i_t v, vector3i_t w)
+{
+	return v.x == w.x && v.y == w.y && v.z == w.z;
+}
