@@ -5,12 +5,15 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#define CHUNK_SIZE 32
+
 world_t allocate_world(size_t size_x, size_t size_y, size_t size_z)
 {
 	world_t result = {0};
 	result.chunk_capacity = size_x * size_y * size_z;
-	result.size = (vector3i_t){size_x, size_y, size_z};
-	result.chunks = (chunk_t*)malloc(result.chunk_capacity * sizeof(chunk_t));
+	result.size = (vector3ul_t){size_x, size_y, size_z};
+	result.chunk_size = (vector3ul_t){CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE};
+	result.chunks = (chunk_t*)calloc(result.chunk_capacity, sizeof(chunk_t));
 	assert(result.chunks && "Buy more ram");
 
 	return result;
@@ -23,7 +26,8 @@ void free_world(world_t* world)
 
 	free(world->chunks);
 	world->chunk_capacity = 0;
-	world->size = (vector3i_t){0, 0, 0};
+	world->size = (vector3ul_t){0, 0, 0};
+	world->chunk_size = (vector3ul_t){0, 0, 0};
 	world->chunks = NULL;
 	world->min_chunks = (vector3i_t){0, 0, 0};
 	world->max_chunks = (vector3i_t){0, 0, 0};
@@ -32,14 +36,13 @@ void free_world(world_t* world)
 void fill_world(world_t* world)
 {
 	size_t i = 0;
-	for (int x = 0; x < world->size.x; x++)
+	for (size_t x = 0; x < world->size.x; x++)
 	{
-		for (int y = 0; y < world->size.y; y++)
+		for (size_t y = 0; y < world->size.y; y++)
 		{
-			for (int z = 0; z < world->size.z; z++)
+			for (size_t z = 0; z < world->size.z; z++)
 			{
-				world->chunks[i].world = world;
-				world->chunks[i].position = (vector3i_t){x, y, z};
+				world->chunks[i] = allocate_chunk(world, (vector3i_t){x, y, z});
 				fill_chunk(&world->chunks[i]);
 				i++;
 			}
@@ -91,13 +94,10 @@ int get_chunk_index(world_t* world, int x, int y, int z)
 
 static void replace_chunk(world_t* world, int chunk_index, int new_x, int new_y, int new_z)
 {
-	chunk_t* chunk = &world->chunks[chunk_index];
-
-	free_chunk(chunk);
-	chunk->world = world;
-	chunk->position = (vector3i_t){new_x, new_y, new_z};
-	fill_chunk(chunk);
-	generate_chunk_model(chunk);
+	free_chunk(&world->chunks[chunk_index]);
+	world->chunks[chunk_index] = allocate_chunk(world, (vector3i_t){new_x, new_y, new_z});
+	fill_chunk(&world->chunks[chunk_index]);
+	generate_chunk_model(&world->chunks[chunk_index]);
 }
 
 void unload_and_load_new_chunks(world_t* world, int dir_x, int dir_y, int dir_z)

@@ -10,19 +10,45 @@
 #include "utils/mesh.h"
 #include "world.h"
 
+static int get_block_index(chunk_t* chunk, size_t x, size_t y, size_t z)
+{
+	const vector3ul_t chunk_size = chunk->world->chunk_size;
+	if (x >= chunk_size.x || y >= chunk_size.y || z >= chunk_size.z)
+		return -1;
+
+	return x + y * chunk_size.x + z * chunk_size.x * chunk_size.y;
+}
+
+chunk_t allocate_chunk(world_t* world, vector3i_t position)
+{
+	chunk_t result =
+	{
+		.position = position,
+		.world = world,
+	};
+
+	result.blocks = (block_type*)malloc(sizeof(block_type) * world->chunk_size.x * world->chunk_size.y * world->chunk_size.z);
+	assert(result.blocks && "Buy more ram");
+
+	return result;
+}
+
+
 void fill_chunk(chunk_t* chunk)
 {
-	for (int x = 0; x < CHUNK_SIZE; x++)
+	const vector3ul_t chunk_size = chunk->world->chunk_size;
+	for (int x = 0; x < (int)chunk_size.x; x++)
 	{
-		float vx = chunk->position.x * CHUNK_SIZE + x;
-		for (int z = 0; z < CHUNK_SIZE; z++)
+		int vx = chunk->position.x * (int)chunk_size.x + x;
+		for (int z = 0; z < (int)chunk_size.z; z++)
 		{
-			float vz = chunk->position.z * CHUNK_SIZE + z;
-			for (size_t y = 0; y < CHUNK_SIZE; y++)
+			int vz = chunk->position.z * (int)chunk_size.z + z;
+			// int height = perlin_noise_2d(vx, vz, 0.1f, 3) * (int)chunk_size.y;
+			for (int y = 0; y < (int)chunk_size.y; y++)
 			{
-				float vy = chunk->position.y * CHUNK_SIZE + y;
+				float vy = chunk->position.y * chunk_size.y+ y;
 				if (perlin_noise_3d(vx, vy, vz) < 0.5f)
-					set_block(chunk, x, y, z, BLOCK_TYPE_BASIC, false);
+				set_block(chunk, x, y, z, BLOCK_TYPE_BASIC, false);
 			}
 		}
 	}
@@ -35,12 +61,17 @@ block_type get_block(chunk_t* chunk, size_t x, size_t y, size_t z)
 		printf("WARNING: in get_block -> chunk is null\n");
 		return BLOCK_TYPE_NONE;
 	}
-	if (x >= CHUNK_SIZE || y >= CHUNK_SIZE || z >= CHUNK_SIZE)
+
+	const vector3ul_t chunk_size = chunk->world->chunk_size;
+	const int index = get_block_index(chunk, x, y, z);
+
+	if (index < 0 || index >= (int)(chunk_size.x * chunk_size.y * chunk_size.z))
 	{
 		printf("WARNING: in get_block -> out of bounds\n");
 		return BLOCK_TYPE_NONE;
 	}
-	return chunk->blocks[x][y][z];
+
+	return chunk->blocks[index];
 }
 
 void set_block(chunk_t* chunk, size_t x, size_t y, size_t z, block_type block, bool update_meshes)
@@ -50,13 +81,16 @@ void set_block(chunk_t* chunk, size_t x, size_t y, size_t z, block_type block, b
 		printf("WARNING: in set_block -> chunk is null\n");
 		return;
 	}
-	if (x >= CHUNK_SIZE || y >= CHUNK_SIZE || z >= CHUNK_SIZE)
+
+	const vector3ul_t chunk_size = chunk->world->chunk_size;
+	const int index = get_block_index(chunk, x, y, z);
+	if (index < 0 || index >= (int)(chunk_size.x * chunk_size.y * chunk_size.z))
 	{
 		printf("WARNING: in set_block -> out of bounds\n");
 		return;
 	}
 
-	chunk->blocks[x][y][z] = block;
+	chunk->blocks[index] = block;
 
 	if (update_meshes)
 	{
@@ -68,7 +102,7 @@ void set_block(chunk_t* chunk, size_t x, size_t y, size_t z, block_type block, b
 			if (neighbooring_chunk)
 				update_chunk_model(neighbooring_chunk);
 		}
-		else if (x == CHUNK_SIZE - 1)
+		else if (x == chunk_size.x - 1)
 		{
 			chunk_t* neighbooring_chunk = get_chunk(chunk->world, chunk->position.x + 1, chunk->position.y, chunk->position.z);
 			if (neighbooring_chunk)
@@ -81,7 +115,7 @@ void set_block(chunk_t* chunk, size_t x, size_t y, size_t z, block_type block, b
 			if (neighbooring_chunk)
 				update_chunk_model(neighbooring_chunk);
 		}
-		else if (y == CHUNK_SIZE - 1)
+		else if (y == chunk_size.y - 1)
 		{
 			chunk_t* neighbooring_chunk = get_chunk(chunk->world, chunk->position.x, chunk->position.y + 1, chunk->position.z);
 			if (neighbooring_chunk)
@@ -94,7 +128,7 @@ void set_block(chunk_t* chunk, size_t x, size_t y, size_t z, block_type block, b
 			if (neighbooring_chunk)
 				update_chunk_model(neighbooring_chunk);
 		}
-		else if (z == CHUNK_SIZE - 1)
+		else if (z == chunk_size.z - 1)
 		{
 			chunk_t* neighbooring_chunk = get_chunk(chunk->world, chunk->position.x, chunk->position.y, chunk->position.z + 1);
 			if (neighbooring_chunk)
@@ -105,11 +139,12 @@ void set_block(chunk_t* chunk, size_t x, size_t y, size_t z, block_type block, b
 
 block_type get_neighboor_block(chunk_t* chunk, size_t x, size_t y, size_t z, direction_type direction)
 {
+	const vector3ul_t chunk_size = chunk->world->chunk_size;
 	switch (direction)
 	{
 		case DIRECTION_UP:
 			{
-				if (y == CHUNK_SIZE - 1)
+				if (y == chunk_size.y - 1)
 				{
 					chunk_t* above_chunk = get_chunk(chunk->world, chunk->position.x, chunk->position.y + 1, chunk->position.z);
 					if (!above_chunk)
@@ -129,7 +164,7 @@ block_type get_neighboor_block(chunk_t* chunk, size_t x, size_t y, size_t z, dir
 					if (!below_chunk)
 						return BLOCK_TYPE_NONE;
 
-					return get_block(below_chunk, x, CHUNK_SIZE - 1, z);
+					return get_block(below_chunk, x, chunk_size.y - 1, z);
 				}
 
 				return get_block(chunk, x, y - 1, z);
@@ -143,7 +178,7 @@ block_type get_neighboor_block(chunk_t* chunk, size_t x, size_t y, size_t z, dir
 					if (!left_chunk)
 						return BLOCK_TYPE_NONE;
 
-					return get_block(left_chunk, CHUNK_SIZE - 1, y, z);
+					return get_block(left_chunk, chunk_size.x - 1, y, z);
 				}
 
 				return get_block(chunk, x - 1, y, z);
@@ -151,7 +186,7 @@ block_type get_neighboor_block(chunk_t* chunk, size_t x, size_t y, size_t z, dir
 			break;
 		case DIRECTION_RIGHT:
 			{
-				if (x == CHUNK_SIZE - 1)
+				if (x == chunk_size.x - 1)
 				{
 					chunk_t* right_chunk = get_chunk(chunk->world, chunk->position.x + 1, chunk->position.y, chunk->position.z);
 					if (!right_chunk)
@@ -171,7 +206,7 @@ block_type get_neighboor_block(chunk_t* chunk, size_t x, size_t y, size_t z, dir
 					if (!front_chunk)
 						return BLOCK_TYPE_NONE;
 
-					return get_block(front_chunk, x, y, CHUNK_SIZE - 1);
+					return get_block(front_chunk, x, y, chunk_size.z - 1);
 				}
 
 				return get_block(chunk, x, y, z - 1);
@@ -179,7 +214,7 @@ block_type get_neighboor_block(chunk_t* chunk, size_t x, size_t y, size_t z, dir
 			break;
 		case DIRECTION_BACK:
 			{
-				if (z == CHUNK_SIZE - 1)
+				if (z == chunk_size.z - 1)
 				{
 					chunk_t* back_chunk = get_chunk(chunk->world, chunk->position.x, chunk->position.y, chunk->position.z + 1);
 					if (!back_chunk)
@@ -200,19 +235,22 @@ block_type get_neighboor_block(chunk_t* chunk, size_t x, size_t y, size_t z, dir
 void generate_chunk_model(chunk_t* chunk)
 {
 	Mesh mesh = {0};
-	size_t max_vertex_count = (6 * 4) * (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE);
-	size_t max_indices_count = (6 * 6) * (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE);
-	size_t max_color_count = (6 * 4) * (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE);
+
+	const vector3ul_t chunk_size = chunk->world->chunk_size;
+	const size_t total_voxel_count = chunk_size.x * chunk_size.y * chunk_size.z;
+	const size_t max_vertex_count = (6 * 4) * total_voxel_count;
+	const size_t max_indices_count = (6 * 6) * total_voxel_count;
+	const size_t max_color_count = (6 * 4) * total_voxel_count;
 
 	mesh.vertices = (float*)malloc((sizeof(float) * 3) * max_vertex_count);
 	mesh.indices = (uint16_t*)malloc(sizeof(uint16_t) * max_indices_count);
 	mesh.colors = (uint8_t*)malloc(sizeof(uint8_t) * 4 * max_color_count);
 
-	for (size_t x = 0; x < CHUNK_SIZE; x++)
+	for (size_t x = 0; x < chunk_size.x; x++)
 	{
-		for (size_t y = 0; y < CHUNK_SIZE; y++)
+		for (size_t y = 0; y < chunk_size.y; y++)
 		{
-			for (size_t z = 0; z < CHUNK_SIZE; z++)
+			for (size_t z = 0; z < chunk_size.z; z++)
 			{
 				block_type block = get_block(chunk, x, y, z);
 				if (block == BLOCK_TYPE_NONE) continue;
@@ -308,14 +346,16 @@ void unload_chunk_model(chunk_t* chunk)
 
 void render_chunk(chunk_t* chunk)
 {
-	Vector3 position = { chunk->position.x * CHUNK_SIZE, chunk->position.y * CHUNK_SIZE, chunk->position.z * CHUNK_SIZE };
+	const vector3ul_t chunk_size = chunk->world->chunk_size;
+	Vector3 position = { chunk->position.x * (int)chunk_size.x, chunk->position.y * (int)chunk_size.y, chunk->position.z * (int)chunk_size.z};
 	DrawModel(chunk->model, position, 1.0f, WHITE);
 }
 
 void render_chunk_borders(chunk_t* chunk)
 {
-	Vector3 position = { (chunk->position.x + 0.5f) * CHUNK_SIZE, (chunk->position.y + 0.5f) * CHUNK_SIZE, (chunk->position.z + 0.5f) * CHUNK_SIZE };
-	DrawCubeWires(position, CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE, LIGHTGRAY);
+	const vector3ul_t chunk_size = chunk->world->chunk_size;
+	Vector3 position = { (chunk->position.x + 0.5f) * chunk_size.x, (chunk->position.y + 0.5f) * chunk_size.y, (chunk->position.z + 0.5f) * chunk_size.z};
+	DrawCubeWires(position, chunk_size.x, chunk_size.y, chunk_size.z, LIGHTGRAY);
 }
 
 void free_chunk(chunk_t* chunk)
@@ -323,8 +363,6 @@ void free_chunk(chunk_t* chunk)
 	unload_chunk_model(chunk);
 	chunk->position = (vector3i_t){0, 0, 0};
 	chunk->world = NULL;
-	for (size_t x = 0; x < CHUNK_SIZE; x++)
-		for (size_t y = 0; y < CHUNK_SIZE; y++)
-			for (size_t z = 0; z < CHUNK_SIZE; z++)
-				chunk->blocks[x][y][z] = BLOCK_TYPE_NONE;
+	free(chunk->blocks);
+	chunk->blocks = NULL;
 }

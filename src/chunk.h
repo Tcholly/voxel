@@ -5,8 +5,6 @@
 
 #include "utils/math.h"
 
-#define CHUNK_SIZE 16
-
 typedef enum
 {
 	BLOCK_TYPE_NONE,
@@ -28,14 +26,14 @@ typedef enum
 typedef struct
 {
 	vector3i_t position;
-	// [x][y][z]
-	block_type blocks[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE];
+	block_type* blocks;
 	Model model;
 
 	// reference to the world they belong to
 	struct world_t* world;
 } chunk_t;
 
+chunk_t allocate_chunk(struct world_t* world, vector3i_t position);
 void fill_chunk(chunk_t* chunk);
 void set_block(chunk_t* chunk, size_t x, size_t y, size_t z, block_type block, bool update_meshes);
 block_type get_block(chunk_t* chunk, size_t x, size_t y, size_t z);

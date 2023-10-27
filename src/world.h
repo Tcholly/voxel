@@ -7,7 +7,8 @@
 
 typedef struct world_t
 {
-	vector3i_t size;
+	vector3ul_t size;
+	vector3ul_t chunk_size;
 	size_t chunk_capacity;
 	chunk_t* chunks;
 	vector3i_t max_chunks;

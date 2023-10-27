@@ -8,6 +8,19 @@
 #include "chunk.h"
 #include "world.h"
 
+vector3i_t get_chunk_pos(world_t* world, Vector3 position)
+{
+	vector3i_t result =
+	{
+		.x = position.x / world->chunk_size.x,
+		.y = 0,
+		.z = position.z / world->chunk_size.y,
+	};
+
+	return result;
+}
+
+
 int main(void)
 {
 	InitWindow(800, 640, "voxel");
@@ -25,12 +38,7 @@ int main(void)
 		.position = {128.0f, 20.0f, 128.0f}
 	};
 
-	vector3i_t previous_chunk = 
-	{
-		.x = camera.position.x / CHUNK_SIZE,
-		.y = 0,
-		.z = camera.position.z / CHUNK_SIZE,
-	};
+	vector3i_t previous_chunk = get_chunk_pos(&world, camera.position);
 
 	bool debug_information = false;
 
@@ -107,9 +115,9 @@ int main(void)
 			for (size_t i = 0; i < world.chunk_capacity; i++)
 			{
 				Matrix transform = MatrixTranslate(
-						world.chunks[i].position.x * CHUNK_SIZE,
-						world.chunks[i].position.y * CHUNK_SIZE,
-						world.chunks[i].position.z * CHUNK_SIZE
+						world.chunks[i].position.x * world.chunk_size.x,
+						world.chunks[i].position.y * world.chunk_size.y,
+						world.chunks[i].position.z * world.chunk_size.z
 					);
 				RayCollision ray_collision = GetRayCollisionMesh(ray, world.chunks[i].model.meshes[0], transform);
 				if (ray_collision.hit && ray_collision.distance < distance)
@@ -123,9 +131,9 @@ int main(void)
 			if (collision.hit)
 			{
 				Vector3 voxel_center = Vector3Subtract(collision.point, Vector3Scale(collision.normal, 0.5f));
-				size_t voxel_x = (int)voxel_center.x - world.chunks[chunk_index].position.x * CHUNK_SIZE;
-				size_t voxel_y = (int)voxel_center.y - world.chunks[chunk_index].position.y * CHUNK_SIZE;
-				size_t voxel_z = (int)voxel_center.z - world.chunks[chunk_index].position.z * CHUNK_SIZE;
+				size_t voxel_x = (int)voxel_center.x - world.chunks[chunk_index].position.x * world.chunk_size.x;
+				size_t voxel_y = (int)voxel_center.y - world.chunks[chunk_index].position.y * world.chunk_size.y;
+				size_t voxel_z = (int)voxel_center.z - world.chunks[chunk_index].position.z * world.chunk_size.z;
 				
 				set_block(&world.chunks[chunk_index], voxel_x, voxel_y, voxel_z, BLOCK_TYPE_NONE, true);
 			}
@@ -145,9 +153,9 @@ int main(void)
 			for (size_t i = 0; i < world.chunk_capacity; i++)
 			{
 				Matrix transform = MatrixTranslate(
-						world.chunks[i].position.x * CHUNK_SIZE,
-						world.chunks[i].position.y * CHUNK_SIZE,
-						world.chunks[i].position.z * CHUNK_SIZE
+						world.chunks[i].position.x * world.chunk_size.x,
+						world.chunks[i].position.y * world.chunk_size.y,
+						world.chunks[i].position.z * world.chunk_size.z
 					);
 				RayCollision ray_collision = GetRayCollisionMesh(ray, world.chunks[i].model.meshes[0], transform);
 				if (ray_collision.hit && ray_collision.distance < distance)
@@ -163,16 +171,16 @@ int main(void)
 				Vector3 voxel_center = Vector3Add(collision.point, Vector3Scale(collision.normal, 0.5f));
 				chunk_t* chunk = &world.chunks[chunk_index];
 
-				int voxel_x = (int)voxel_center.x - chunk->position.x * CHUNK_SIZE;
-				int voxel_y = (int)voxel_center.y - chunk->position.y * CHUNK_SIZE;
-				int voxel_z = (int)voxel_center.z - chunk->position.z * CHUNK_SIZE;
+				int voxel_x = (int)voxel_center.x - chunk->position.x * world.chunk_size.x;
+				int voxel_y = (int)voxel_center.y - chunk->position.y * world.chunk_size.y;
+				int voxel_z = (int)voxel_center.z - chunk->position.z * world.chunk_size.z;
 
 				if (voxel_x < 0)
 				{
 					chunk = get_chunk(&world, chunk->position.x - 1, chunk->position.y, chunk->position.z);
-					voxel_x = CHUNK_SIZE - 1;
+					voxel_x = world.chunk_size.x - 1;
 				}
-				else if (voxel_x >= CHUNK_SIZE)
+				else if (voxel_x >= (int)world.chunk_size.x)
 				{
 					chunk = get_chunk(&world, chunk->position.x + 1, chunk->position.y, chunk->position.z);
 					voxel_x = 0;
@@ -180,9 +188,9 @@ int main(void)
 				if (voxel_y < 0)
 				{
 					chunk = get_chunk(&world, chunk->position.x, chunk->position.y - 1, chunk->position.z);
-					voxel_y = CHUNK_SIZE - 1;
+					voxel_y = world.chunk_size.y - 1;
 				}
-				else if (voxel_y >= CHUNK_SIZE)
+				else if (voxel_y >= (int)world.chunk_size.y)
 				{
 					chunk = get_chunk(&world, chunk->position.x, chunk->position.y + 1, chunk->position.z);
 					voxel_y = 0;
@@ -190,9 +198,9 @@ int main(void)
 				if (voxel_z < 0)
 				{
 					chunk = get_chunk(&world, chunk->position.x, chunk->position.y, chunk->position.z - 1);
-					voxel_z = CHUNK_SIZE - 1;
+					voxel_z = world.chunk_size.z - 1;
 				}
-				else if (voxel_z >= CHUNK_SIZE)
+				else if (voxel_z >= (int)world.chunk_size.z)
 				{
 					chunk = get_chunk(&world, chunk->position.x, chunk->position.y, chunk->position.z + 1);
 					voxel_z = 0;
@@ -204,12 +212,7 @@ int main(void)
 		}
 
 		// Chunk_loading
-		vector3i_t current_chunk = 
-		{
-			.x = camera.position.x / CHUNK_SIZE,
-			.y = 0,
-			.z = camera.position.z / CHUNK_SIZE,
-		};
+		vector3i_t current_chunk = get_chunk_pos(&world, camera.position);
 		if (camera.position.x < 0) current_chunk.x -= 1;
 		if (camera.position.z < 0) current_chunk.z -= 1;
 
